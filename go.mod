@@ -1,4 +1,4 @@
-module github.com/fatih/gomodifytags
+module github.com/zhuxi0511/gomodifyfields
 
 require (
 	github.com/fatih/camelcase v1.0.0
