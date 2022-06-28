@@ -65,11 +65,12 @@ type config struct {
 	override             bool
 	skipUnexportedFields bool
 
-	transform   string
-	sort        bool
-	valueFormat string
-	clear       bool
-	clearOption bool
+	transform        string
+	sort             bool
+	valueFormat      string
+	clear            bool
+	clearOption      bool
+	fieldToInterface bool
 }
 
 func main() {
@@ -158,6 +159,9 @@ func parseConfig(args []string) (*config, error) {
 		flagSort = flag.Bool("sort", false,
 			"Sort sorts the tags in increasing order according to the key name")
 
+		// field flags
+		flagFieldToInterface = flag.Bool("field-to-interface", false, "modify fields to interface, need field option")
+
 		// formatting
 		flagFormatting = flag.String("template", "",
 			"Format the given tag's value. i.e: \"column:{field}\", \"field_name={field}\"")
@@ -200,6 +204,7 @@ func parseConfig(args []string) (*config, error) {
 		valueFormat:          *flagFormatting,
 		override:             *flagOverride,
 		skipUnexportedFields: *flagSkipUnexportedFields,
+		fieldToInterface:     *flagFieldToInterface,
 	}
 
 	if *flagModified {
@@ -775,6 +780,19 @@ func (c *config) rewrite(node ast.Node, start, end int) (ast.Node, error) {
 				continue
 			}
 
+			// make filed to interface
+			if c.fieldToInterface {
+				f.Type = &ast.InterfaceType{
+					Interface: 0,
+					Methods: &ast.FieldList{
+						Opening: 1,
+						List:    nil,
+						Closing: 1,
+					},
+					Incomplete: false,
+				}
+			}
+
 			f.Tag.Value = res
 		}
 
@@ -814,9 +832,10 @@ func (c *config) validate() error {
 		!c.clear &&
 		!c.clearOption &&
 		(c.removeOptions == nil || len(c.removeOptions) == 0) &&
-		(c.remove == nil || len(c.remove) == 0) {
+		(c.remove == nil || len(c.remove) == 0) &&
+		!c.fieldToInterface {
 		return errors.New("one of " +
-			"[-add-tags, -add-options, -remove-tags, -remove-options, -clear-tags, -clear-options]" +
+			"[-add-tags, -add-options, -remove-tags, -remove-options, -clear-tags, -clear-options, -field-to-interface]" +
 			" should be defined")
 	}
 
